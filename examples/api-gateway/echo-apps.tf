@@ -63,7 +63,7 @@ resource "consul_config_entry" "echo_app_defaults" {
   })
 }
 
-// API gateway http route information for echo service
+// API gateway http route with rate limiting
 resource "consul_config_entry" "api_gw_http_route_echo" {
   depends_on = [consul_config_entry.echo_app_defaults, consul_config_entry.api_gateway_entry]
 
@@ -72,6 +72,66 @@ resource "consul_config_entry" "api_gw_http_route_echo" {
 
   config_json = jsonencode({
     Rules = [
+      {
+        Matches = [
+          {
+            Path = {
+              Match = "exact"
+              Value = "/limited"
+            }
+          }
+        ]
+        Filters = [
+          {
+            Type = "URLRewrite"
+            URLRewrite = {
+              Path = "/"
+            }
+          },
+          {
+            Type = "RequestRateLimit"
+            RequestRateLimit = {
+              RequestsPerUnit = 5
+              Unit           = "MINUTE"
+            }
+          }
+        ]
+        Services = [
+          {
+            Name = "echo-app"
+          }
+        ]
+      },
+      {
+        Matches = [
+          {
+            Path = {
+              Match = "exact"
+              Value = "/strict"
+            }
+          }
+        ]
+        Filters = [
+          {
+            Type = "URLRewrite"
+            URLRewrite = {
+              Path = "/"
+            }
+          },
+          {
+            Type = "RequestRateLimit"
+            RequestRateLimit = {
+              RequestsPerUnit = 2
+              Unit           = "MINUTE"
+            }
+          }
+        ]
+        Services = [
+          {
+            Name = "echo-app"
+          }
+        ]
+      },
       {
         Matches = [
           {
