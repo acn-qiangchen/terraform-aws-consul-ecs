@@ -15,15 +15,12 @@ This example demonstrates Consul API Gateway's rate limiting capabilities with t
 The rate limiting is implemented using Consul API Gateway's HTTP Route filters:
 
 ```hcl
-Filters = [
-  {
-    Type = "RequestRateLimit"
-    RequestRateLimit = {
-      RequestsPerUnit = 5      # Number of requests allowed
-      Unit           = "MINUTE" # Time window (SECOND, MINUTE, HOUR)
-    }
+Filters = {
+  RequestRateLimit = {
+    RequestsPerUnit = 5      # Number of requests allowed
+    Unit           = "MINUTE" # Time window (SECOND, MINUTE, HOUR)
   }
-]
+}
 ```
 
 ### **Key Features:**
@@ -98,19 +95,13 @@ for i in {1..4}; do curl -w "HTTP: %{http_code}\n" $API_GW_URL/strict; done
   "Rules": [
     {
       "Matches": [{"Path": {"Match": "exact", "Value": "/limited"}}],
-      "Filters": [
-        {
-          "Type": "URLRewrite",
-          "URLRewrite": {"Path": "/"}
-        },
-        {
-          "Type": "RequestRateLimit", 
-          "RequestRateLimit": {
-            "RequestsPerUnit": 5,
-            "Unit": "MINUTE"
-          }
+      "Filters": {
+        "URLRewrite": {"Path": "/"},
+        "RequestRateLimit": {
+          "RequestsPerUnit": 5,
+          "Unit": "MINUTE"
         }
-      ],
+      },
       "Services": [{"Name": "echo-app"}]
     }
   ]
