@@ -1,14 +1,12 @@
-# 🚦 Consul API Gateway Rate Limiting Demo
+# 🚦 Consul Service-Level Rate Limiting Demo
 
-This example demonstrates Consul API Gateway's rate limiting capabilities with three different endpoints showcasing various rate limiting configurations.
+This example demonstrates Consul's **service-level rate limiting** capabilities using service-defaults configuration entries.
 
-## 📋 **Rate Limiting Endpoints**
+## 📋 **Rate Limiting Configuration**
 
-| Endpoint | Rate Limit | Description |
-|----------|------------|-------------|
-| `/` | None | Normal endpoint with no rate limiting |
-| `/limited` | 5 req/min | Moderate rate limiting (5 requests per minute) |
-| `/strict` | 2 req/min | Strict rate limiting (2 requests per minute) |
+| Service | Rate Limit | Burst Limit | Description |
+|---------|------------|-------------|-------------|
+| `echo-app` | 0.1 req/sec | 3 requests | Service-level rate limiting with burst capability |
 
 ## 🏗️ **How It Works**
 

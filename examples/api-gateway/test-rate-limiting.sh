@@ -59,40 +59,33 @@ echo -e "${BLUE}=== Consul API Gateway Rate Limiting Demo ===${NC}"
 echo
 
 echo -e "${YELLOW}Available endpoints:${NC}"
-echo "• $API_GW_URL/           - No rate limiting"
-echo "• $API_GW_URL/limited    - 5 requests per minute"
-echo "• $API_GW_URL/strict     - 2 requests per minute"
+echo "• $API_GW_URL/           - Service-level rate limiting (0.1 req/sec, burst 3)"
 echo
 
-# Test 1: Normal endpoint (no rate limiting)
-echo -e "${BLUE}=== Test 1: Normal endpoint (no rate limiting) ===${NC}"
+# Test 1: Burst requests (should allow first 3, then rate limit)
+echo -e "${BLUE}=== Test 1: Burst requests (0.1 req/sec, burst 3) ===${NC}"
+echo -e "${YELLOW}Making 6 requests quickly to trigger rate limiting after burst...${NC}"
+for i in {1..6}; do
+    make_request "/" "Rate limited endpoint - Request $i"
+    sleep 0.2
+done
+
+# Test 2: Slow requests (should work within rate limit)
+echo -e "${BLUE}=== Test 2: Slow requests (respecting rate limit) ===${NC}"
+echo -e "${YELLOW}Making requests with 12-second intervals (within 0.1 req/sec limit)...${NC}"
 for i in {1..3}; do
-    make_request "/" "Normal endpoint - Request $i"
-    sleep 1
-done
-
-# Test 2: Limited endpoint (5 requests per minute)
-echo -e "${BLUE}=== Test 2: Limited endpoint (5 requests per minute) ===${NC}"
-echo -e "${YELLOW}Making 7 requests quickly to trigger rate limiting...${NC}"
-for i in {1..7}; do
-    make_request "/limited" "Limited endpoint - Request $i"
-    sleep 0.5
-done
-
-# Test 3: Strict endpoint (2 requests per minute)
-echo -e "${BLUE}=== Test 3: Strict endpoint (2 requests per minute) ===${NC}"
-echo -e "${YELLOW}Making 4 requests quickly to trigger rate limiting...${NC}"
-for i in {1..4}; do
-    make_request "/strict" "Strict endpoint - Request $i"
-    sleep 0.5
+    make_request "/" "Slow request - Request $i"
+    if [ $i -lt 3 ]; then
+        echo -e "${BLUE}Waiting 12 seconds for rate limit window...${NC}"
+        sleep 12
+    fi
 done
 
 echo -e "${BLUE}=== Rate Limiting Demo Complete ===${NC}"
 echo
 echo -e "${YELLOW}Summary:${NC}"
-echo "• Normal endpoint: All requests should succeed"
-echo "• Limited endpoint: First 5 requests succeed, then 429 (Too Many Requests)"
-echo "• Strict endpoint: First 2 requests succeed, then 429 (Too Many Requests)"
+echo "• Burst test: First 3 requests should succeed (burst), then 429 (Too Many Requests)"
+echo "• Slow test: All requests should succeed when respecting 0.1 req/sec rate limit"
 echo
-echo -e "${YELLOW}Note: Rate limits reset after the time window (1 minute)${NC}"
-echo -e "${YELLOW}Try running the script again after a minute to see limits reset${NC}"
+echo -e "${YELLOW}Note: Rate limit is 0.1 requests/second with burst of 3${NC}"
+echo -e "${YELLOW}This means you can make 3 requests quickly, then must wait ~10 seconds between requests${NC}"

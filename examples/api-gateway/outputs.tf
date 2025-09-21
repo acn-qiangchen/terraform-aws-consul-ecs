@@ -10,10 +10,10 @@ output "api_gateway_lb_url" {
   value = "http://${aws_lb.this.dns_name}:8443"
 }
 
-output "rate_limiting_endpoints" {
+output "rate_limiting_info" {
   value = {
-    normal_endpoint = "http://${aws_lb.this.dns_name}:8443/"
-    limited_endpoint = "http://${aws_lb.this.dns_name}:8443/limited (5 req/min)"
-    strict_endpoint = "http://${aws_lb.this.dns_name}:8443/strict (2 req/min)"
+    endpoint = "http://${aws_lb.this.dns_name}:8443/"
+    rate_limit = "0.1 requests/second with burst of 3"
+    description = "Service-level rate limiting applied to echo-app service"
   }
 }

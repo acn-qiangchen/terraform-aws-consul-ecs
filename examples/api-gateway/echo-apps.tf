@@ -52,7 +52,7 @@ module "echo_app" {
 }
 
 
-// Service defaults for echo app
+// Service defaults for echo app with rate limiting
 resource "consul_config_entry" "echo_app_defaults" {
   kind     = "service-defaults"
   name     = "echo-app"
@@ -60,10 +60,16 @@ resource "consul_config_entry" "echo_app_defaults" {
 
   config_json = jsonencode({
     Protocol = "http"
+    RateLimit = {
+      InstanceLevel = {
+        RequestsPerSecond = 0.1   # ~6 requests per minute (very strict for demo)
+        RequestsMaxBurst  = 3     # Allow burst of 3 requests
+      }
+    }
   })
 }
 
-// API gateway http route with rate limiting
+// API gateway http route (rate limiting applied at service level)
 resource "consul_config_entry" "api_gw_http_route_echo" {
   depends_on = [consul_config_entry.echo_app_defaults, consul_config_entry.api_gateway_entry]
 
@@ -72,54 +78,6 @@ resource "consul_config_entry" "api_gw_http_route_echo" {
 
   config_json = jsonencode({
     Rules = [
-      {
-        Matches = [
-          {
-            Path = {
-              Match = "exact"
-              Value = "/limited"
-            }
-          }
-        ]
-        Filters = {
-          URLRewrite = {
-            Path = "/"
-          }
-          RequestRateLimit = {
-            RequestsPerUnit = 5
-            Unit           = "MINUTE"
-          }
-        }
-        Services = [
-          {
-            Name = "echo-app"
-          }
-        ]
-      },
-      {
-        Matches = [
-          {
-            Path = {
-              Match = "exact"
-              Value = "/strict"
-            }
-          }
-        ]
-        Filters = {
-          URLRewrite = {
-            Path = "/"
-          }
-          RequestRateLimit = {
-            RequestsPerUnit = 2
-            Unit           = "MINUTE"
-          }
-        }
-        Services = [
-          {
-            Name = "echo-app"
-          }
-        ]
-      },
       {
         Matches = [
           {
