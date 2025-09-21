@@ -1,0 +1,241 @@
+{
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "containerDefinitions": [
+        {
+            "command": [
+                "mesh-init"
+            ],
+            "cpu": 0,
+            "environment": [
+                {
+                    "name": "CONSUL_ECS_CONFIG_JSON",
+                    "value": "{\"bootstrapDir\":\"/consul\",\"consulLogin\":{},\"consulServers\":{\"defaults\":{\"tls\":false,\"tlsServerName\":\"\"},\"grpc\":{\"port\":8502},\"hosts\":\"consul-ecs-consul-server.dc1\",\"http\":{\"https\":false,\"port\":8500},\"skipServerWatch\":false},\"gateway\":{\"kind\":\"api-gateway\",\"lanAddress\":{\"address\":\"\",\"port\":8443},\"meta\":{},\"name\":\"consul-ecs-api-gateway\",\"namespace\":\"\",\"partition\":\"\",\"tags\":[],\"wanAddress\":{\"address\":\"\",\"port\":8443}},\"healthSyncContainers\":[],\"transparentProxy\":{\"consulDNS\":{\"enabled\":false},\"enabled\":false,\"excludeInboundPorts\":[],\"excludeOutboundCIDRs\":[],\"excludeOutboundPorts\":[],\"excludeUIDs\":[]}}"
+                }
+            ],
+            "essential": false,
+            "image": "hashicorppreview/consul-ecs:0.9.0-dev",
+            "linuxParameters": {
+                "capabilities": {
+                    "add": [],
+                    "drop": []
+                },
+                "initProcessEnabled": true
+            },
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "consul-ecs",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "api-gateway"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/consul",
+                    "readOnly": false,
+                    "sourceVolume": "consul_data"
+                },
+                {
+                    "containerPath": "/bin/consul-inject",
+                    "readOnly": true,
+                    "sourceVolume": "consul_binary"
+                }
+            ],
+            "name": "consul-ecs-mesh-init",
+            "portMappings": [],
+            "secrets": [],
+            "systemControls": [],
+            "volumesFrom": []
+        },
+        {
+            "command": [
+                "consul-dataplane",
+                "-config-file",
+                "/consul/consul-dataplane.json"
+            ],
+            "cpu": 0,
+            "dependsOn": [
+                {
+                    "condition": "SUCCESS",
+                    "containerName": "consul-ecs-mesh-init"
+                }
+            ],
+            "entryPoint": [
+                "/consul/consul-ecs",
+                "envoy-entrypoint"
+            ],
+            "environment": [],
+            "essential": true,
+            "healthCheck": {
+                "command": [
+                    "/consul/consul-ecs",
+                    "net-dial",
+                    "127.0.0.1:22000"
+                ],
+                "interval": 5,
+                "retries": 10,
+                "timeout": 5
+            },
+            "image": "hashicorppreview/consul-dataplane:1.6.0-dev",
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "consul-ecs",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "api-gateway"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/consul",
+                    "readOnly": true,
+                    "sourceVolume": "consul_data"
+                }
+            ],
+            "name": "consul-dataplane",
+            "portMappings": [
+                {
+                    "containerPort": 8443,
+                    "hostPort": 8443,
+                    "protocol": "tcp"
+                }
+            ],
+            "systemControls": [],
+            "ulimits": [
+                {
+                    "hardLimit": 1048576,
+                    "name": "nofile",
+                    "softLimit": 1048576
+                }
+            ],
+            "user": "5995",
+            "volumesFrom": []
+        },
+        {
+            "command": [
+                "health-sync"
+            ],
+            "cpu": 0,
+            "dependsOn": [
+                {
+                    "condition": "SUCCESS",
+                    "containerName": "consul-ecs-mesh-init"
+                }
+            ],
+            "environment": [
+                {
+                    "name": "CONSUL_ECS_CONFIG_JSON",
+                    "value": "{\"bootstrapDir\":\"/consul\",\"consulLogin\":{},\"consulServers\":{\"defaults\":{\"tls\":false,\"tlsServerName\":\"\"},\"grpc\":{\"port\":8502},\"hosts\":\"consul-ecs-consul-server.dc1\",\"http\":{\"https\":false,\"port\":8500},\"skipServerWatch\":false},\"gateway\":{\"kind\":\"api-gateway\",\"lanAddress\":{\"address\":\"\",\"port\":8443},\"meta\":{},\"name\":\"consul-ecs-api-gateway\",\"namespace\":\"\",\"partition\":\"\",\"tags\":[],\"wanAddress\":{\"address\":\"\",\"port\":8443}},\"healthSyncContainers\":[],\"transparentProxy\":{\"consulDNS\":{\"enabled\":false},\"enabled\":false,\"excludeInboundPorts\":[],\"excludeOutboundCIDRs\":[],\"excludeOutboundPorts\":[],\"excludeUIDs\":[]}}"
+                }
+            ],
+            "essential": false,
+            "image": "hashicorppreview/consul-ecs:0.9.0-dev",
+            "linuxParameters": {
+                "initProcessEnabled": true
+            },
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "consul-ecs",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "api-gateway"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/consul",
+                    "readOnly": true,
+                    "sourceVolume": "consul_data"
+                }
+            ],
+            "name": "consul-ecs-health-sync",
+            "portMappings": [],
+            "secrets": [],
+            "systemControls": [],
+            "user": "5996",
+            "volumesFrom": []
+        }
+    ],
+    "cpu": "256",
+    "executionRoleArn": "arn:aws:iam::352100722351:role/consul-ecs/consul-ecs-api-gateway-execution",
+    "family": "consul-ecs-api-gateway",
+    "memory": "512",
+    "networkMode": "awsvpc",
+    "placementConstraints": [],
+    "registeredAt": "2025-09-21T15:21:23.847Z",
+    "registeredBy": "arn:aws:iam::352100722351:user/cloud_user",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.24"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.task-iam-role"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.25"
+        },
+        {
+            "name": "ecs.capability.container-health-check"
+        },
+        {
+            "name": "ecs.capability.container-ordering"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        }
+    ],
+    "requiresCompatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "revision": 1,
+    "status": "ACTIVE",
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:352100722351:task-definition/consul-ecs-api-gateway:1",
+    "taskRoleArn": "arn:aws:iam::352100722351:role/consul-ecs/consul-ecs-api-gateway-task",
+    "volumes": [
+        {
+            "host": {},
+            "name": "consul_data"
+        },
+        {
+            "host": {},
+            "name": "consul_binary"
+        }
+    ],
+    "tags": [
+        {
+            "key": "consul.hashicorp.com/module",
+            "value": "terraform-aws-consul-ecs"
+        },
+        {
+            "key": "consul.hashicorp.com/service-name",
+            "value": "consul-ecs-api-gateway"
+        },
+        {
+            "key": "consul.hashicorp.com/mesh",
+            "value": "true"
+        },
+        {
+            "key": "consul.hashicorp.com/module-version",
+            "value": "0.9.0-dev"
+        }
+    ]
+}
