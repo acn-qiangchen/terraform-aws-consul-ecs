@@ -81,21 +81,15 @@ resource "consul_config_entry" "api_gw_http_route_echo" {
             }
           }
         ]
-        Filters = [
-          {
-            Type = "URLRewrite"
-            URLRewrite = {
-              Path = "/"
-            }
-          },
-          {
-            Type = "RequestRateLimit"
-            RequestRateLimit = {
-              RequestsPerUnit = 5
-              Unit           = "MINUTE"
-            }
+        Filters = {
+          URLRewrite = {
+            Path = "/"
           }
-        ]
+          RequestRateLimit = {
+            RequestsPerUnit = 5
+            Unit           = "MINUTE"
+          }
+        }
         Services = [
           {
             Name = "echo-app"
@@ -111,21 +105,15 @@ resource "consul_config_entry" "api_gw_http_route_echo" {
             }
           }
         ]
-        Filters = [
-          {
-            Type = "URLRewrite"
-            URLRewrite = {
-              Path = "/"
-            }
-          },
-          {
-            Type = "RequestRateLimit"
-            RequestRateLimit = {
-              RequestsPerUnit = 2
-              Unit           = "MINUTE"
-            }
+        Filters = {
+          URLRewrite = {
+            Path = "/"
           }
-        ]
+          RequestRateLimit = {
+            RequestsPerUnit = 2
+            Unit           = "MINUTE"
+          }
+        }
         Services = [
           {
             Name = "echo-app"
