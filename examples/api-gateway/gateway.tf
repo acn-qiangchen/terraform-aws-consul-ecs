@@ -21,11 +21,10 @@ module "api_gateway" {
   log_configuration             = local.log_config
   consul_server_hosts           = module.dc1.dev_consul_server.server_dns
   kind                          = "api-gateway"
-  tls                           = true
-  consul_ca_cert_arn            = module.dc1.dev_consul_server.ca_cert_arn
+  tls                           = false
   additional_task_role_policies = [aws_iam_policy.execute_command.arn]
 
-  acls = true
+  acls = false
 
   lb_create_security_group = false
   enable_transparent_proxy = false
@@ -65,70 +64,4 @@ resource "consul_config_entry" "api_gateway_entry" {
   })
 
   provider = consul.dc1-cluster
-}
-
-// Intention to allow traffic from the client app to the server app
-resource "consul_config_entry" "client_server_intention" {
-  depends_on = [module.dc1]
-
-  kind     = "service-intentions"
-  name     = "${var.name}-example-server-app"
-  provider = consul.dc1-cluster
-
-  config_json = jsonencode({
-    Sources = [
-      {
-        Name       = "${var.name}-example-client-app"
-        Action     = "allow"
-        Precedence = 9
-        Type       = "consul"
-      }
-    ]
-  })
-}
-
-// Intention to allow traffic from the API gateway to the client app
-resource "consul_config_entry" "gateway_client_intention" {
-  depends_on = [module.dc1]
-
-  kind     = "service-intentions"
-  name     = "${var.name}-example-client-app"
-  provider = consul.dc1-cluster
-
-  config_json = jsonencode({
-    Sources = [
-      {
-        Name       = "${var.name}-api-gateway"
-        Action     = "allow"
-        Precedence = 9
-        Type       = "consul"
-      }
-    ]
-  })
-}
-
-// Policy that allows execution of remote commands in ECS tasks.
-resource "aws_iam_policy" "execute_command" {
-  name   = "${var.name}-ecs-execute-command"
-  path   = "/"
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ssmmessages:CreateControlChannel",
-        "ssmmessages:CreateDataChannel",
-        "ssmmessages:OpenControlChannel",
-        "ssmmessages:OpenDataChannel"
-      ],
-      "Resource": [
-        "*"
-      ]
-    }
-  ]
-}
-EOF
-
 }
